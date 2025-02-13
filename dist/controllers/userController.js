@@ -45,31 +45,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.updateUser = exports.getUserById = exports.createUser = exports.getAllUsers = void 0;
 const userService = __importStar(require("../services/userService"));
 const responseHandler_1 = require("../utils/responseHandler");
-// Correct typing for async controllers
 const getAllUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const users = userService.getAllUsers();
+        const users = yield userService.getAllUsers();
         (0, responseHandler_1.handleSuccess)(res, users);
     }
     catch (error) {
-        next(error); // Ensure correct error handling
+        next(error);
     }
 });
 exports.getAllUsers = getAllUsers;
 const createUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { name, email } = req.body;
-        const user = userService.createUser(name, email);
+        const userRequest = req.body; // Ensures request matches IUserRequest
+        const user = yield userService.createUser(userRequest);
+        console.log("Successfully created user:", user); // Debug log
         (0, responseHandler_1.handleSuccess)(res, user, 201);
     }
     catch (error) {
+        console.error("Error creating user:", error);
         next(error);
     }
 });
 exports.createUser = createUser;
 const getUserById = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user = userService.getUserById(req.params.id);
+        const user = yield userService.getUserById(parseInt(req.params.id));
         if (!user) {
             res.status(404).json({ message: "User not found" });
             return;
@@ -83,8 +84,8 @@ const getUserById = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
 exports.getUserById = getUserById;
 const updateUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { name, email } = req.body;
-        const updatedUser = userService.updateUser(req.params.id, name, email);
+        const updateData = req.body; // Allow updating partial fields
+        const updatedUser = yield userService.updateUser(parseInt(req.params.id), updateData);
         if (!updatedUser) {
             res.status(404).json({ message: "User not found" });
             return;
@@ -98,7 +99,7 @@ const updateUser = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
 exports.updateUser = updateUser;
 const deleteUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const result = userService.deleteUser(req.params.id);
+        const result = yield userService.deleteUser(parseInt(req.params.id));
         if (!result) {
             res.status(404).json({ message: "User not found" });
             return;

@@ -1,12 +1,15 @@
 import { Router } from "express";
 import * as userController from "../controllers/userController";
+import { validateUser } from "../middlewares/UserSchema";
 
 const router = Router();
 
 router.get("/", userController.getAllUsers);
-router.post("/", userController.createUser);
+router.post("/", validateUser, userController.createUser); // Apply validation
 router.get("/:id", userController.getUserById);
-router.put("/:id", userController.updateUser);
+router.put("/:id", validateUser, userController.updateUser); // Apply validation
 router.delete("/:id", userController.deleteUser);
 
 export default router;
+
+

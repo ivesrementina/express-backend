@@ -35,10 +35,11 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const userController = __importStar(require("../controllers/userController"));
+const UserSchema_1 = require("../middlewares/UserSchema");
 const router = (0, express_1.Router)();
 router.get("/", userController.getAllUsers);
-router.post("/", userController.createUser);
+router.post("/", UserSchema_1.validateUser, userController.createUser); // Apply validation
 router.get("/:id", userController.getUserById);
-router.put("/:id", userController.updateUser);
+router.put("/:id", UserSchema_1.validateUser, userController.updateUser); // Apply validation
 router.delete("/:id", userController.deleteUser);
 exports.default = router;
