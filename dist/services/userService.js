@@ -17,7 +17,15 @@ const getAllUsers = () => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.getAllUsers = getAllUsers;
 const createUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield userRepository.create(data);
+    const userData = {
+        first_name: data.first_name,
+        middle_name: data.middle_name,
+        last_name: data.last_name,
+        name_ext: data.name_ext,
+        email: data.email,
+        password: data.password,
+    };
+    return yield userRepository.create(userData);
 });
 exports.createUser = createUser;
 const getUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {

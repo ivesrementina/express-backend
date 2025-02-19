@@ -2,10 +2,31 @@ import { AnyZodObject, z } from "zod";
 import { Validator } from "./Validator";
 
 export const UserSchema: AnyZodObject = z.object({
-  name: z.string({
-    required_error: "Name is required.",
-    invalid_type_error: "Name must be a string.",
-  }).min(2, "Name must be at least 2 characters long."),
+  first_name: z.string({
+    required_error: "First name is required.",
+    invalid_type_error: "First name must be a string.",
+  })
+  .min(2, "First name must be at least 2 characters long.")
+  .max(50, "First name must not exceed 50 characters.")
+  .regex(/^[A-Za-z]+$/, "First name must contain only letters without spaces."), 
+
+  middle_name: z.string({
+    invalid_type_error: "Middle name must be a string.",
+  })
+  .optional(),
+
+  last_name: z.string({
+    required_error: "Last name is required.",
+    invalid_type_error: "Last name must be a string.",
+  })
+  .min(2, "Last name must be at least 2 characters long.")
+  .max(50, "Last name must not exceed 50 characters.")
+  .regex(/^[A-Za-z]+$/, "Last name must contain only letters without spaces."), 
+
+  name_ext: z.string({
+    invalid_type_error: "Name extension must be a string.",
+  })
+  .optional(),
 
   email: z.string({
     required_error: "Email is required.",
@@ -18,4 +39,7 @@ export const UserSchema: AnyZodObject = z.object({
   }).min(6, "Password must be at least 6 characters long."),
 });
 
+// ✅ Use Validator Middleware
 export const validateUser = new Validator().execute(UserSchema);
+
+

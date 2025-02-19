@@ -45,68 +45,92 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.updateUser = exports.getUserById = exports.createUser = exports.getAllUsers = void 0;
 const userService = __importStar(require("../services/userService"));
 const responseHandler_1 = require("../utils/responseHandler");
+// 🟢 Get All Users
 const getAllUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const users = yield userService.getAllUsers();
-        (0, responseHandler_1.handleSuccess)(res, users);
+        (0, responseHandler_1.handleSuccess)(res, users, 200);
     }
     catch (error) {
+        console.error("❌ Error in getAllUsers:", error);
         next(error);
     }
 });
 exports.getAllUsers = getAllUsers;
+// 🟢 Create New User
 const createUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const userRequest = req.body; // Ensures request matches IUserRequest
+        const userRequest = req.body; // Validate incoming request
         const user = yield userService.createUser(userRequest);
-        console.log("Successfully created user:", user); // Debug log
-        (0, responseHandler_1.handleSuccess)(res, user, 201);
+        console.log("✅ User created successfully:", user);
+        (0, responseHandler_1.handleSuccess)(res, user, 201); // 201 Created
     }
     catch (error) {
-        console.error("Error creating user:", error);
+        console.error("❌ Error creating user:", error);
         next(error);
     }
 });
 exports.createUser = createUser;
+// 🟢 Get User By ID
 const getUserById = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user = yield userService.getUserById(parseInt(req.params.id));
+        const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+            res.status(400).json({ message: "Invalid user ID format" });
+            return;
+        }
+        const user = yield userService.getUserById(userId);
         if (!user) {
             res.status(404).json({ message: "User not found" });
             return;
         }
-        (0, responseHandler_1.handleSuccess)(res, user);
+        (0, responseHandler_1.handleSuccess)(res, user, 200);
     }
     catch (error) {
+        console.error("❌ Error in getUserById:", error);
         next(error);
     }
 });
 exports.getUserById = getUserById;
+// 🟡 Update User
 const updateUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const updateData = req.body; // Allow updating partial fields
-        const updatedUser = yield userService.updateUser(parseInt(req.params.id), updateData);
+        const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+            res.status(400).json({ message: "Invalid user ID format" });
+            return;
+        }
+        const updateData = req.body;
+        const updatedUser = yield userService.updateUser(userId, updateData);
         if (!updatedUser) {
             res.status(404).json({ message: "User not found" });
             return;
         }
-        (0, responseHandler_1.handleSuccess)(res, updatedUser);
+        (0, responseHandler_1.handleSuccess)(res, updatedUser, 200);
     }
     catch (error) {
+        console.error("❌ Error in updateUser:", error);
         next(error);
     }
 });
 exports.updateUser = updateUser;
+// 🛑 Delete User
 const deleteUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const result = yield userService.deleteUser(parseInt(req.params.id));
+        const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+            res.status(400).json({ message: "Invalid user ID format" });
+            return;
+        }
+        const result = yield userService.deleteUser(userId);
         if (!result) {
             res.status(404).json({ message: "User not found" });
             return;
         }
-        (0, responseHandler_1.handleSuccess)(res, { message: "User deleted" });
+        (0, responseHandler_1.handleSuccess)(res, { message: "User deleted successfully" }, 200);
     }
     catch (error) {
+        console.error("❌ Error in deleteUser:", error);
         next(error);
     }
 });

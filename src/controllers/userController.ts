@@ -1,70 +1,101 @@
 import { Request, Response, NextFunction } from "express";
 import * as userService from "../services/userService";
 import { handleSuccess } from "../utils/responseHandler";
-import { IUserRequest } from "../interfaces/IUserRequest";  // Import DTO
-import { IUser } from "../interfaces/IUser";  // Import User interface
+import { IUserRequest } from "../interfaces/IUserRequest";  // DTO for user requests
+import { IUser } from "../interfaces/IUser";              // User interface
 
+//Get All Users
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const users: IUser[] = await userService.getAllUsers();
-    handleSuccess(res, users);
+    handleSuccess(res, users, 200);
   } catch (error) {
+    console.error("Error in getAllUsers:", error);
     next(error);
   }
 };
 
+//Create New User
 export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userRequest: IUserRequest = req.body;  // Ensures request matches IUserRequest
+    const userRequest: IUserRequest = req.body;  // Validate incoming request
     const user: IUser = await userService.createUser(userRequest);
 
-    console.log("Successfully created user:", user);  // Debug log
-    handleSuccess(res, user, 201);
+    console.log("User created successfully:", user);
+    handleSuccess(res, user, 201);  // 201 Created
   } catch (error) {
     console.error("Error creating user:", error);
     next(error);
   }
 };
 
+//Get User By ID
 export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const user: IUser | null = await userService.getUserById(parseInt(req.params.id));
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) {
+      res.status(400).json({ message: "Invalid user ID format" });
+      return;
+    }
+
+    const user: IUser | null = await userService.getUserById(userId);
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
     }
-    handleSuccess(res, user);
+
+    handleSuccess(res, user, 200);
   } catch (error) {
+    console.error("Error in getUserById:", error);
     next(error);
   }
 };
 
+//Update User
 export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const updateData: Partial<IUserRequest> = req.body; // Allow updating partial fields
-    const updatedUser: IUser | null = await userService.updateUser(parseInt(req.params.id), updateData);
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) {
+      res.status(400).json({ message: "Invalid user ID format" });
+      return;
+    }
+
+    const updateData: Partial<IUserRequest> = req.body;
+    const updatedUser: IUser | null = await userService.updateUser(userId, updateData);
 
     if (!updatedUser) {
       res.status(404).json({ message: "User not found" });
       return;
     }
-    handleSuccess(res, updatedUser);
+
+    handleSuccess(res, updatedUser, 200);
   } catch (error) {
+    console.error("Error in updateUser:", error);
     next(error);
   }
 };
 
+//Delete User
 export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const result: boolean = await userService.deleteUser(parseInt(req.params.id));
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) {
+      res.status(400).json({ message: "Invalid user ID format" });
+      return;
+    }
+
+    const result: boolean = await userService.deleteUser(userId);
     if (!result) {
       res.status(404).json({ message: "User not found" });
       return;
     }
-    handleSuccess(res, { message: "User deleted" });
+
+    handleSuccess(res, { message: "User deleted successfully" }, 200);
   } catch (error) {
+    console.error("Error in deleteUser:", error);
     next(error);
   }
 };
+
 
 
