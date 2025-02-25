@@ -10,24 +10,22 @@ export const getAllUsers = async (): Promise<IUser[]> => {
 };
 
 export const createUser = async (data: IUserRequest): Promise<IUser> => {
-  // ✅ Ensure password exists before hashing
-  if (!data.password) {
-    throw new Error("Password is required.");
-  }
+  // ✅ Ensure the password is set (Zod already defaults it)
+  const password = data.password ?? "IR12345"; // If password is missing, default to "IR12345"
 
-  // ✅ Hash password before saving it
-  const hashedPassword = await bcrypt.hash(data.password, 10); // 10 is the salt rounds
+  // ✅ Hash password before saving
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  // ✅ Construct `IUser` object before saving (to include `id`, `created_at`, `updated_at`)
+  // ✅ Construct `IUser` object before saving
   const userData: IUser = {
-    id: 0, // Placeholder, DB will auto-generate
+    id: 0, // Placeholder, DB auto-generates ID
     first_name: data.first_name,
-    middle_name: data.middle_name || "", // Provide default values for optional fields
+    middle_name: data.middle_name || "",
     last_name: data.last_name,
     name_ext: data.name_ext || "",
     email: data.email,
     password: hashedPassword, // Store hashed password
-    created_at: new Date(), // Assign current timestamp
+    created_at: new Date(),
     updated_at: new Date(),
   };
 

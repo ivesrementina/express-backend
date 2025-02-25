@@ -15,16 +15,18 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-//Create New User
+// 🟢 Create New User (With Auto-Generated Password)
 export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userRequest: IUserRequest = req.body;  // Validate incoming request
+    const userRequest: IUserRequest = req.body;  
+
+    // ✅ Pass request to userService to handle password logic
     const user: IUser = await userService.createUser(userRequest);
 
-    console.log("User created successfully:", user);
-    handleSuccess(res, user, 201);  // 201 Created
+    console.log("✅ User created successfully:", user);
+    handleSuccess(res, user, 201);
   } catch (error) {
-    console.error("Error creating user:", error);
+    console.error("❌ Error creating user:", error);
     next(error);
   }
 };
