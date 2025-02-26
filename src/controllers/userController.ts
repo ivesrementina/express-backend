@@ -20,7 +20,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
   try {
     const userRequest: IUserRequest = req.body;  
 
-    // ✅ Pass request to userService to handle password logic
+    // ✅ Pass request to userService to handle username and password logic
     const user: IUser = await userService.createUser(userRequest);
 
     console.log("✅ User created successfully:", user);

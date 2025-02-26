@@ -6,31 +6,33 @@ export class MySQLUserRepository implements IUserRepository {
   // 🟢 Create User (Ensures hashed password is stored)
   async create(data: IUser): Promise<IUser> {
     const query = `
-      INSERT INTO users (first_name, middle_name, last_name, name_ext, email, password) 
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO users (first_name, middle_name, last_name, name_ext, email, password, username) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     const [result]: any = await pool.query(query, [
       data.first_name,
       data.middle_name,
       data.last_name,
-      data.name_ext ?? undefined, // ✅ Use `undefined` instead of `null`
+      data.name_ext ?? undefined,
       data.email,
-      data.password, // Assumes password is already hashed before calling this function
+      data.password,
+      data.username, // ✅ Save auto-generated username
     ]);
-
-    // ✅ Construct return object explicitly (avoids duplicate `id` issue)
+  
     return {
-      id: result.insertId, // Assign the auto-incremented ID
+      id: result.insertId,
       first_name: data.first_name,
       middle_name: data.middle_name,
       last_name: data.last_name,
-      name_ext: data.name_ext ?? undefined, // ✅ Avoid `null` by defaulting to `undefined`
+      name_ext: data.name_ext ?? undefined,
       email: data.email,
-      password: data.password, // Password remains hashed
-      created_at: new Date(), // Assuming DB auto-handles timestamps
+      password: data.password,
+      username: data.username, // ✅ Return auto-generated username
+      created_at: new Date(),
       updated_at: new Date(),
     };
   }
+  
 
   // 🟡 Get All Users (Excludes password for security)
   async findAll(): Promise<IUser[]> {
@@ -52,6 +54,17 @@ export class MySQLUserRepository implements IUserRepository {
     const users = rows as IUser[];
     return users.length > 0 ? users[0] : null;
   }
+
+  // 🔍 Check if username already exists
+async findByUsername(username: string): Promise<IUser | null> {
+  const [rows] = await pool.query(
+    "SELECT * FROM users WHERE username = ?",
+    [username]
+  );
+  const users = rows as IUser[];
+  return users.length > 0 ? users[0] : null;
+}
+
 
   // 🔍 Get User by Email (Used for authentication)
   async findByEmail(email: string): Promise<IUser | null> {
