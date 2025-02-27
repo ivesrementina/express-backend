@@ -9,6 +9,7 @@ router.post("/", validateUser, userController.createUser); // Apply validation
 router.get("/:id", userController.getUserById);
 router.put("/:id", validateUser, userController.updateUser); // Apply validation
 router.delete("/:id", userController.deleteUser);
+router.post("/login", userController.loginUser); // ✅ Login route
 
 export default router;
 
