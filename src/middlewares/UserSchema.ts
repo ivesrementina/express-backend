@@ -18,15 +18,19 @@ export const UserSchema: AnyZodObject = z.object({
 
   email: z.string().email("Invalid email format."),
 
-  // ✅ Ensure password is optional but defaults to "IR12345"
+  // ✅ Make password optional but provide default value
   password: z.string()
     .min(6, "Password must be at least 6 characters long.")
-    .default("IR12345")  // ✅ Default password value
-    .optional(), // ✅ Password is not required in the request
+    .default("SZ12345") // ✅ Auto-generates default password if missing
+    .optional(), // ✅ Password is not required in request
 });
 
-// ✅ Use Validator Middleware
+// ✅ Separate Validation for Partial Updates (PUT)
+export const validateUserUpdate = new Validator().execute(UserSchema.partial()); // ✅ Allows partial fields
+
+// ✅ Full Validation for User Creation (POST)
 export const validateUser = new Validator().execute(UserSchema);
+
 
 
 
