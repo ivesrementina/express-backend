@@ -3,17 +3,34 @@ import * as userService from "../services/userService";
 import { handleSuccess } from "../utils/responseHandler";
 import { IUserRequest } from "../interfaces/IUserRequest";  // DTO for user requests
 import { IUser } from "../interfaces/IUser";              // User interface
+import { sanitizeUser } from "../utils/responseHandler";
+import { generateToken } from "../utils/jwtUtils";
 
 //Get All Users
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const users: IUser[] = await userService.getAllUsers();
-    handleSuccess(res, users, 200);
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit as string) || 10);
+
+    const { users, totalRecords } = await userService.getAllUsers(page, limit);
+
+    const sanitizedUsers = users.map(sanitizeUser);
+
+    handleSuccess(res, {
+      users: sanitizedUsers,
+      pagination: {
+        currentPage: page,
+        limit: limit,
+        totalPages: Math.ceil(totalRecords / limit),
+        totalRecords,
+      }
+    }, 200);
   } catch (error) {
     console.error("Error in getAllUsers:", error);
     next(error);
   }
 };
+
 
 // 🟢 Create New User (With Auto-Generated Password)
 export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -53,7 +70,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-//Update User
+// ✅ Update User Profile (Requires Current Password for Password Change)
 export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = parseInt(req.params.id);
@@ -62,9 +79,27 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
-    const updateData: Partial<IUserRequest> = req.body;
-    const updatedUser: IUser | null = await userService.updateUser(userId, updateData);
+    const { currentPassword, newPassword, ...updateData } = req.body;
 
+    // 🛑 If new password is provided, require the current password
+    if (newPassword) {
+      if (!currentPassword) {
+        res.status(400).json({ message: "Current password is required to change your password." });
+        return;
+      }
+
+      const isUpdated = await userService.updateUserPassword(userId, currentPassword, newPassword);
+      if (!isUpdated) {
+        res.status(401).json({ message: "Current password is incorrect." });
+        return;
+      }
+
+      res.status(200).json({ message: "Password updated successfully." });
+      return;
+    }
+
+    // ✅ Update other user details
+    const updatedUser = await userService.updateUser(userId, updateData);
     if (!updatedUser) {
       res.status(404).json({ message: "User not found" });
       return;
@@ -103,6 +138,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
 export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
       res.status(400).json({ message: "Email and password are required." });
       return;
@@ -114,7 +150,10 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
       return;
     }
 
-    handleSuccess(res, { message: "Login successful!", user }, 200);
+    const token = generateToken(user);
+    const sanitizedUser = sanitizeUser(user);
+
+    handleSuccess(res, { message: "Login successful!", user: sanitizedUser, token }, 200);
   } catch (error) {
     console.error("Error in loginUser:", error);
     next(error);

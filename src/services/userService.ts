@@ -8,8 +8,8 @@ const userRepository = new MySQLUserRepository();
 /**
  * ✅ Fetch all users
  */
-export const getAllUsers = async (): Promise<IUser[]> => {
-  return await userRepository.findAll();
+export const getAllUsers = async (page: number, limit: number) => {
+  return await userRepository.findAllPaginated(page, limit);
 };
 
 /**
@@ -17,27 +17,37 @@ export const getAllUsers = async (): Promise<IUser[]> => {
  * Example: "Ives Matthew" + "Rementina" → IMRementina
  */
 const generateUsername = async (firstName: string, lastName: string): Promise<string> => {
-  const nameParts = firstName.trim().split(/\s+/); // Split first name by spaces
-  const initials = nameParts.slice(0, 2).map(word => word.charAt(0)).join("").toUpperCase(); // Get initials from first two words
+  // Sanitize inputs
+  const sanitizedFirstName = firstName.trim();
+  const sanitizedLastName = lastName.trim().replace(/\s+/g, "");
 
-  let username = `${initials}${lastName.replace(/\s+/g, "")}`; // Remove spaces from last name
+  // Get initials from first two words of the first name
+  const firstNameParts = sanitizedFirstName.split(/\s+/);
+  const initials = firstNameParts
+    .slice(0, 2)
+    .map(word => word.charAt(0).toUpperCase())
+    .join("");
 
-  // ✅ Ensure username is unique
-  let uniqueUsername = username;
+  // Initial username format: initials + lastName
+  const baseUsername = `${initials}${sanitizedLastName}`;
+  let finalUsername = baseUsername;
+
+  // Check for uniqueness by appending a counter if needed
   let counter = 1;
-  while (await userRepository.findByUsername(uniqueUsername)) {
-    uniqueUsername = `${username}${counter}`; // Append number if username exists
+  while (await userRepository.findByUsername(finalUsername)) {
+    finalUsername = `${baseUsername}${counter}`;
     counter++;
   }
 
-  return uniqueUsername;
+  return finalUsername;
 };
+
 
 /**
  * ✅ Default generated password (Fixed: "SZ12345")
  */
 const generateDefaultPassword = (): string => {
-  return "SZ12345";
+  return process.env.DEFAULT_PASSWORD || "SZ12345"; // Fallback if env is missing
 };
 
 /**
@@ -103,6 +113,48 @@ export const authenticateUser = async (email: string, password: string): Promise
   const isPasswordValid = await bcrypt.compare(password, user.password);
   return isPasswordValid ? user : null;
 };
+
+/**
+ * ✅ Update User Password (Validates Current Password)
+ */
+export const updateUserPassword = async (id: number, currentPassword: string, newPassword: string): Promise<boolean> => {
+  // 🟢 Fetch the current user
+  const user = await userRepository.findById(id);
+
+  // 🛑 Handle case where user is not found
+  if (!user) {
+    console.error("❌ Error: User not found.");
+    return false;
+  }
+
+  console.log("🔍 Retrieved user from DB:", user);
+
+  // 🛑 Handle case where password is missing
+  if (!user.password) {
+    console.error("❌ Error: Password field is missing for this user.");
+    return false;
+  }
+
+  console.log("🔍 Stored password hash:", user.password);
+
+  // 🔍 Verify current password
+  const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isPasswordValid) {
+    console.error("❌ Error: Current password is incorrect.");
+    return false;
+  }
+
+  // 🔐 Hash new password
+  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+  // 📝 Update password in DB
+  await userRepository.update(id, { password: hashedNewPassword });
+
+  console.log("✅ Password updated successfully.");
+  return true;
+};
+
+
 
 
 

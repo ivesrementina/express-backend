@@ -35,25 +35,45 @@ export class MySQLUserRepository implements IUserRepository {
   
 
   // 🟡 Get All Users (Excludes password for security)
-  async findAll(): Promise<IUser[]> {
-    const [rows] = await pool.query(`
+  async findAllPaginated(page: number = 1, limit: number = 10): Promise<{
+    users: IUser[];
+    totalRecords: number;
+  }> {
+    const offset = (page - 1) * limit;
+  
+    // Fetch paginated users
+    const [rows] = await pool.query(
+      `
       SELECT id, first_name, middle_name, last_name, name_ext, email, created_at, updated_at 
       FROM users
-    `);
-    return rows as IUser[];
+      LIMIT ? OFFSET ?
+      `,
+      [limit, offset]
+    );
+  
+    // Fetch total record count
+    const [countResult] = await pool.query(`SELECT COUNT(*) as total FROM users`);
+    const totalRecords = (countResult as any)[0]?.total || 0;
+  
+    return {
+      users: rows as IUser[],
+      totalRecords,
+    };
   }
+  
 
   // 🟠 Get User by ID (Excludes password)
   async findById(id: number): Promise<IUser | null> {
     const [rows] = await pool.query(`
-      SELECT id, first_name, middle_name, last_name, name_ext, email, created_at, updated_at 
+      SELECT id, first_name, middle_name, last_name, name_ext, email, password, created_at, updated_at 
       FROM users 
       WHERE id = ?
     `, [id]);
-
+  
     const users = rows as IUser[];
     return users.length > 0 ? users[0] : null;
   }
+  
 
   // 🔍 Check if username already exists
 async findByUsername(username: string): Promise<IUser | null> {
@@ -76,28 +96,28 @@ async findByUsername(username: string): Promise<IUser | null> {
     return users.length > 0 ? users[0] : null;
   }
 
-  // 🟠 Update User (Prevents overwriting password if not updated)
   async update(id: number, data: Partial<IUser>): Promise<IUser | null> {
-    // Get current user to keep existing password if not provided
+    // Fetch existing user details
     const existingUser = await this.findById(id);
     if (!existingUser) return null;
-
+  
     const query = `
       UPDATE users 
-      SET first_name = ?, middle_name = ?, last_name = ?, name_ext = ?, email = ?, password = ?, updated_at = NOW()
+      SET first_name = ?, middle_name = ?, last_name = ?, name_ext = ?, email = ?, 
+          password = ?, updated_at = NOW()
       WHERE id = ?
     `;
-
+  
     await pool.query(query, [
       data.first_name || existingUser.first_name,
       data.middle_name !== undefined ? data.middle_name : existingUser.middle_name,
       data.last_name || existingUser.last_name,
-      data.name_ext !== undefined ? data.name_ext ?? undefined : existingUser.name_ext, // ✅ Fix null issue
+      data.name_ext !== undefined ? data.name_ext : existingUser.name_ext,
       data.email || existingUser.email,
-      data.password ? data.password : existingUser.password, // Keep existing password if not updated
+      data.password ? data.password : existingUser.password, // Keep existing password if not updating
       id
     ]);
-
+  
     return this.findById(id);
   }
 
